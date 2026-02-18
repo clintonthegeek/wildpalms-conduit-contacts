@@ -1,4 +1,4 @@
-kcoreaddons_add_plugin(qpilotsync_contacts
+kcoreaddons_add_plugin(wildpalms_contacts
     SOURCES
         contactconduit.cpp
         contactconduit.h
@@ -6,11 +6,11 @@ kcoreaddons_add_plugin(qpilotsync_contacts
         contactmapper.h
         contactview.cpp
         contactview.h
-    INSTALL_NAMESPACE "qpilotsync/conduits"
+    INSTALL_NAMESPACE "wildpalms/conduits"
 )
 
-target_link_libraries(qpilotsync_contacts
-    QPilotCore
+target_link_libraries(wildpalms_contacts
+    WildPalmsCore
     KF6::CoreAddons
     KF6::I18n
     KF6::WidgetsAddons
