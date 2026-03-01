@@ -3,8 +3,8 @@
 #include "contactmapper.h"
 #include "palm/pilotrecord.h"
 #include "palm/categoryinfo.h"
-#include "palm/kpilotdevicelink.h"
 #include "sync/localfilebackend.h"
+#include "sync/qsynccore/conflictrecord.h"
 
 #include <QDebug>
 
@@ -15,54 +15,10 @@ ContactConduit::ContactConduit(QObject *parent)
 {
 }
 
-ContactConduit::~ContactConduit()
-{
-    delete m_categories;
-}
-
-void ContactConduit::loadCategories(SyncContext *context)
-{
-    if (m_categories) {
-        delete m_categories;
-        m_categories = nullptr;
-    }
-    m_originalAppInfo.clear();
-
-    if (!context || !context->deviceLink || m_dbHandle < 0) {
-        return;
-    }
-
-    m_categories = new CategoryInfo();
-
-    unsigned char appInfoBuf[4096];
-    size_t appInfoSize = sizeof(appInfoBuf);
-
-    if (context->deviceLink->readAppBlock(m_dbHandle, appInfoBuf, &appInfoSize)) {
-        // Store original AppInfo block for later write-back
-        m_originalAppInfo = QByteArray(reinterpret_cast<const char*>(appInfoBuf), appInfoSize);
-
-        m_categories->parse(appInfoBuf, appInfoSize);
-        emit logMessage(QString("Loaded %1 categories").arg(m_categories->usedCategories().size()));
-    }
-}
-
-QString ContactConduit::categoryName(int categoryIndex) const
-{
-    if (m_categories) {
-        return m_categories->categoryName(categoryIndex);
-    }
-    return QString();
-}
-
 BackendRecord* ContactConduit::palmToBackend(PilotRecord *palmRecord,
                                               SyncContext *context)
 {
     if (!palmRecord) return nullptr;
-
-    // Ensure categories are loaded
-    if (!m_categories) {
-        loadCategories(context);
-    }
 
     // Unpack Palm contact
     ContactMapper::Contact contact = ContactMapper::unpackContact(palmRecord);
@@ -98,11 +54,6 @@ PilotRecord* ContactConduit::backendToPalm(BackendRecord *backendRecord,
                                             SyncContext *context)
 {
     if (!backendRecord) return nullptr;
-
-    // Ensure categories are loaded
-    if (!m_categories) {
-        loadCategories(context);
-    }
 
     // Parse vCard content
     QString content = QString::fromUtf8(backendRecord->data);
@@ -185,58 +136,85 @@ QString ContactConduit::palmRecordDescription(PilotRecord *record) const
     return name;
 }
 
-bool ContactConduit::writeModifiedCategories(SyncContext *context)
+void ContactConduit::enrichConflictSnapshot(QSyncCore::RecordSnapshot &snapshot,
+                                              bool isSourceSide) const
 {
-    // Check if we have categories that were modified
-    if (!m_categories || !m_categories->isDirty()) {
-        return true;  // Nothing to write
-    }
+    if (snapshot.content.isEmpty()) return;
 
-    if (!context || !context->deviceLink || m_dbHandle < 0) {
-        emit logMessage("Warning: Cannot write categories - no device connection");
-        return false;
-    }
+    ContactMapper::Contact contact;
 
-    emit logMessage("Writing modified categories back to Palm...");
-
-    size_t catSize = m_categories->packSize();
-
-    if (m_originalAppInfo.isEmpty()) {
-        // No original - just write categories
-        QByteArray buffer(catSize, 0);
-        int packed = m_categories->pack(reinterpret_cast<unsigned char*>(buffer.data()), buffer.size());
-        if (packed < 0) {
-            emit logMessage("Warning: Failed to pack categories");
-            return false;
-        }
-
-        if (!context->deviceLink->writeAppBlock(m_dbHandle,
-                reinterpret_cast<const unsigned char*>(buffer.constData()), packed)) {
-            emit logMessage("Warning: Failed to write categories to Palm");
-            return false;
-        }
+    if (isSourceSide) {
+        // Source: Palm binary — unpack via mapper, convert to vCard text
+        PilotRecord tempRecord(0, 0, 0, snapshot.content);
+        contact = ContactMapper::unpackContact(&tempRecord);
+        QString catName = categoryName(contact.category);
+        snapshot.content = ContactMapper::contactToVCard(contact, catName).toUtf8();
     } else {
-        // We have original AppInfo - update category portion and preserve the rest
-        QByteArray buffer = m_originalAppInfo;
-
-        // Pack categories into the beginning of the buffer
-        int packed = m_categories->pack(reinterpret_cast<unsigned char*>(buffer.data()),
-                                         qMin(static_cast<size_t>(buffer.size()), catSize));
-        if (packed < 0) {
-            emit logMessage("Warning: Failed to pack categories");
-            return false;
-        }
-
-        if (!context->deviceLink->writeAppBlock(m_dbHandle,
-                reinterpret_cast<const unsigned char*>(buffer.constData()), buffer.size())) {
-            emit logMessage("Warning: Failed to write AppInfo block to Palm");
-            return false;
-        }
+        // Target: already vCard text — parse for metadata
+        contact = ContactMapper::vCardToContact(QString::fromUtf8(snapshot.content));
     }
 
-    m_categories->clearDirty();
-    emit logMessage("Categories updated on Palm");
-    return true;
+    // Populate metadata
+    QStringList nameParts;
+    if (!contact.firstName.isEmpty()) nameParts << contact.firstName;
+    if (!contact.lastName.isEmpty()) nameParts << contact.lastName;
+    QString name = nameParts.join(QStringLiteral(" "));
+    if (name.isEmpty()) name = contact.company;
+
+    if (!name.isEmpty())
+        snapshot.metadata[QStringLiteral("name")] = name;
+    if (!contact.phone1.isEmpty())
+        snapshot.metadata[QStringLiteral("phone")] = contact.phone1;
+    if (!contact.custom1.isEmpty() && contact.custom1.contains('@'))
+        snapshot.metadata[QStringLiteral("email")] = contact.custom1;
+    if (!contact.company.isEmpty())
+        snapshot.metadata[QStringLiteral("company")] = contact.company;
+    if (!contact.title.isEmpty())
+        snapshot.metadata[QStringLiteral("title")] = contact.title;
+
+    QStringList addrParts;
+    if (!contact.address.isEmpty()) addrParts << contact.address;
+    if (!contact.city.isEmpty()) addrParts << contact.city;
+    if (!contact.state.isEmpty()) addrParts << contact.state;
+    if (!contact.zip.isEmpty()) addrParts << contact.zip;
+    if (!contact.country.isEmpty()) addrParts << contact.country;
+    if (!addrParts.isEmpty())
+        snapshot.metadata[QStringLiteral("address")] = addrParts.join(QStringLiteral(", "));
+
+    snapshot.contentType = QStringLiteral("text/vcard");
+}
+
+QString ContactConduit::formatConflictRecordHtml(const QSyncCore::RecordSnapshot &snapshot) const
+{
+    QString html;
+    const QVariantMap &m = snapshot.metadata;
+
+    QString name = m.value(QStringLiteral("name")).toString();
+    if (!name.isEmpty())
+        html += QStringLiteral("<h3>%1</h3>").arg(name.toHtmlEscaped());
+
+    html += QStringLiteral("<table cellpadding='4'>");
+
+    auto addRow = [&html](const QString &label, const QString &value) {
+        if (!value.isEmpty())
+            html += QStringLiteral("<tr><td><b>%1:</b></td><td>%2</td></tr>")
+                .arg(label.toHtmlEscaped(), value.toHtmlEscaped());
+    };
+
+    addRow(QStringLiteral("Phone"), m.value(QStringLiteral("phone")).toString());
+    addRow(QStringLiteral("Email"), m.value(QStringLiteral("email")).toString());
+    addRow(QStringLiteral("Company"), m.value(QStringLiteral("company")).toString());
+    addRow(QStringLiteral("Title"), m.value(QStringLiteral("title")).toString());
+    addRow(QStringLiteral("Address"), m.value(QStringLiteral("address")).toString());
+
+    html += QStringLiteral("</table>");
+
+    // Also show raw vCard for full details
+    QString content = QString::fromUtf8(snapshot.content);
+    html += QStringLiteral("<hr><details><summary>Full vCard</summary><pre>%1</pre></details>")
+        .arg(content.toHtmlEscaped());
+
+    return html;
 }
 
 QWidget *ContactConduit::createView(QWidget *parent)
