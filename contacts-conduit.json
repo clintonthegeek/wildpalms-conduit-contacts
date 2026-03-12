@@ -11,7 +11,7 @@
     "X-WildPalms-ConduitId": "contacts",
     "X-WildPalms-ConduitType": "sync",
     "X-WildPalms-PalmCreatorId": "addr",
-    "X-WildPalms-PalmDatabase": "AddressDB",
+    "X-WildPalms-PalmDatabases": ["AddressDB"],
     "X-WildPalms-RequiresDevice": true,
     "X-WildPalms-RunBefore": [],
     "X-WildPalms-RunAfter": [],

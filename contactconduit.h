@@ -26,7 +26,7 @@ public:
 
     QString conduitId() const override { return "contacts"; }
     QString displayName() const override { return "Contacts"; }
-    QString palmDatabaseName() const override { return "AddressDB"; }
+    QStringList palmDatabaseNames() const override { return {"AddressDB"}; }
     QString fileExtension() const override { return ".vcf"; }
 
     // ========== UI Contribution ==========
@@ -51,9 +51,11 @@ public:
     PilotRecord* backendToPalm(BackendRecord *backendRecord,
                                 SyncContext *context) override;
 
-    bool recordsEqual(PilotRecord *palm, BackendRecord *backend) const override;
+    bool recordsEqual(PilotRecord *palm, BackendRecord *backend,
+                       const SyncContext *context) const override;
 
-    QString palmRecordDescription(PilotRecord *record) const override;
+    QString palmRecordDescription(PilotRecord *record,
+                                   const SyncContext *context) const override;
 
     // ========== Conflict Display ==========
 

@@ -71,8 +71,10 @@ PilotRecord* ContactConduit::backendToPalm(BackendRecord *backendRecord,
     return record;
 }
 
-bool ContactConduit::recordsEqual(PilotRecord *palm, BackendRecord *backend) const
+bool ContactConduit::recordsEqual(PilotRecord *palm, BackendRecord *backend,
+                                   const SyncContext *context) const
 {
+    Q_UNUSED(context);
     if (!palm || !backend) return false;
 
     // Unpack Palm contact
@@ -111,8 +113,10 @@ bool ContactConduit::recordsEqual(PilotRecord *palm, BackendRecord *backend) con
     return true;
 }
 
-QString ContactConduit::palmRecordDescription(PilotRecord *record) const
+QString ContactConduit::palmRecordDescription(PilotRecord *record,
+                                               const SyncContext *context) const
 {
+    Q_UNUSED(context);
     if (!record) return QString();
 
     ContactMapper::Contact contact = ContactMapper::unpackContact(record);
