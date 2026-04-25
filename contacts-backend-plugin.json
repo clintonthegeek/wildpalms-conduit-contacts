@@ -1,0 +1,18 @@
+{
+    "KPlugin": {
+        "Id": "contacts",
+        "Name": "Contacts Sync",
+        "Description": "Syncs Palm AddressDB to vCard 4.0 records via virtual category sub-collections.",
+        "Icon": "view-pim-contacts",
+        "Authors": [{ "Name": "Clinton Ignatov" }],
+        "License": "GPL",
+        "Version": "2.0"
+    },
+    "X-WildPalms-PluginType": "backend",
+    "X-WildPalms-PalmDatabases": ["AddressDB"],
+    "X-WildPalms-ClaimDescriptions": {
+        "AddressDB": "Syncs AddressDB to vCard 4.0 records; one virtual sub-collection per Palm category."
+    },
+    "X-WildPalms-DefaultEnabled": true,
+    "X-WildPalms-SortOrder": 40
+}
