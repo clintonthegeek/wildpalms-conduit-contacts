@@ -47,7 +47,7 @@ ContactsBlobBackend::ContactsBlobBackend(
     WildPalms::PalmSync::PalmBackend *palmBackend,
     const WildPalms::PalmCalendar::CategoryMappingStore *categoryStore,
     QObject *parent)
-    : Kalburator::Sync::IBlobBackend(parent)
+    : QObject(parent)
     , m_palmBackend(palmBackend)
     , m_categoryStore(categoryStore)
 {
