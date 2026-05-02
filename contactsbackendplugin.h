@@ -5,36 +5,20 @@
 
 #include <QObject>
 
-#include "core/ibackendplugin.h"
+#include "core/ibackendplugin_v2.h"
 
+namespace Kalburator::Sync::QSyncCore { struct RecordSnapshot; }
 namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
 namespace WildPalms::PalmConflict { struct PalmBackendConfig; }
-class PalmDeviceConnection;
+namespace WildPalms::PalmSync { class PalmBackend; }
+namespace WildPalms::Runtime { class PalmDeviceAccess; }
 
 namespace WildPalms::ContactsPlugin {
 
-/**
- * @brief Fourth new-ABI WildPalms plugin (Memo E.9, Calendar E.10, ToDo E.11).
- *
- * Provides:
- *   - ContactsBlobBackend wrapping the shared PalmBackend (one
- *     collection per populated category slot under "AddressDB").
- *   - No typed SyncBackend; libkalburator has no typed-contacts
- *     upper layer (extract-on-second-consumer per parent spec).
- *   - ContactsConflictHandler (multi-valued field-union overlay +
- *     Palm delegation).
- *
- * Owns the per-session CategoryMappingStore, populated from the
- * AddressDB AppInfo block at createBackends() time.
- *
- * Does NOT register a main-window view — legacy ContactView stays
- * attached to legacy ContactConduit until E.16's unified-runtime
- * cleanup.
- */
-class ContactsBackendPlugin : public QObject, public WildPalms::IBackendPlugin
+class ContactsBackendPlugin : public QObject, public WildPalms::IBackendPluginV2
 {
     Q_OBJECT
-    Q_INTERFACES(WildPalms::IBackendPlugin)
+    Q_INTERFACES(WildPalms::IBackendPluginV2)
 public:
     explicit ContactsBackendPlugin(QObject *parent = nullptr);
     ~ContactsBackendPlugin() override;
@@ -46,31 +30,29 @@ public:
     QString description() const override;
     QString version()     const override;
 
-    // IBackendPlugin
-    QStringList      claimedDatabases() const override;
-    ProvidedBackends createBackends(Kalburator::Sync::ISyncHost *host,
-                                    PalmDeviceConnection         *device) override;
+    // IBackendPluginV2
+    QStringList claimedDatabases() const override;
+    std::unique_ptr<Kalburator::Sync::IBlobBackend>
+        createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device) override;
 
-    // IBackendPlugin — conflict handler
+    // IBackendPluginV2 — conflict handler
     Kalburator::Sync::QSyncCore::ConflictHandler *createConflictHandler() override;
 
-    // IBackendPlugin — main view (none for E.12; legacy ContactView stays
-    // attached to legacy ContactConduit until E.16). The IBackendPlugin
-    // base provides default no-op implementations of createMainView /
-    // mainViewName / mainViewIcon, so explicitly only override hasMainView.
+    // No main view for contacts (legacy ContactView stays on legacy conduit until E.16)
     bool hasMainView() const override { return false; }
 
-    // IBackendPlugin — conflict presentation
+    // Conflict presentation (called by conflict UI layer; not virtual in v2)
     void    enrichConflictSnapshot(
         Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot,
-        bool isSourceSide) const override;
+        bool isSourceSide) const;
     QString formatConflictRecordHtml(
-        const Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot) const override;
+        const Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot) const;
 
 private:
     std::unique_ptr<WildPalms::PalmCalendar::CategoryMappingStore> m_categoryStore;
     std::unique_ptr<WildPalms::PalmConflict::PalmBackendConfig>    m_palmConfig;
-    PalmDeviceConnection *m_device = nullptr;   // borrowed; cached for createConflictHandler
+    std::unique_ptr<WildPalms::PalmSync::PalmBackend>              m_palmBackend;
+    WildPalms::Runtime::PalmDeviceAccess *m_device = nullptr; // borrowed; cached for createConflictHandler
 };
 
 } // namespace WildPalms::ContactsPlugin
