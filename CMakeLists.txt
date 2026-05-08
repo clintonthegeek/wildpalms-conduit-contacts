@@ -10,6 +10,12 @@ kcoreaddons_add_plugin(wildpalms_contacts_v2
         # Stages delegate body to encodePalmToVcard / decodeVcardToPalm
         # in contactsvcardtranscoder; registration happens in Task 14.
         palmtovcardtransformation.cpp palmtovcardtransformation.h
+        # Phase Ia Task 14 — path A registration helper. Static
+        # registerWith() drops the (contacts, palm) peer shape + the
+        # two palm<->vcard4 edges into the process-wide
+        # TransformationRegistry. Wired in from
+        # ContactsBackendPlugin in Task 15.
+        contactsdomainextension.cpp   contactsdomainextension.h
     INSTALL_NAMESPACE "wildpalms/plugins"
 )
 target_include_directories(wildpalms_contacts_v2
