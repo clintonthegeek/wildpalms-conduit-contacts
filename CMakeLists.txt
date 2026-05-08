@@ -6,6 +6,10 @@ kcoreaddons_add_plugin(wildpalms_contacts_v2
         contactsblobbackend.cpp       contactsblobbackend.h
         contactsconflicthandler.cpp   contactsconflicthandler.h
         contactsvcardtranscoder.cpp   contactsvcardtranscoder.h
+        # Phase Ia Task 11 — palm↔vcard4 TransformationStage subclasses.
+        # Stages delegate body to encodePalmToVcard / decodeVcardToPalm
+        # in contactsvcardtranscoder; registration happens in Task 14.
+        palmtovcardtransformation.cpp palmtovcardtransformation.h
     INSTALL_NAMESPACE "wildpalms/plugins"
 )
 target_include_directories(wildpalms_contacts_v2
