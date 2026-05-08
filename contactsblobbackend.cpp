@@ -115,13 +115,11 @@ QList<Kalburator::Sync::BackendRecord> ContactsBlobBackend::loadRecords(
     for (const auto &pr : records) {
         if (static_cast<int>(pr.category) != slot) continue;
         if (pr.isDeleted()) continue;
-        QByteArray vcard = encodePalmToVcard(pr);
-        if (vcard.isEmpty()) continue;   // skip undecodable records (e.g. tombstones)
 
         Kalburator::Sync::BackendRecord br;
         br.id           = idForPalmRecord(pr.recordId);
-        br.data         = vcard;
-        br.type         = QStringLiteral("text/vcard");
+        br.data         = pr.toWireBytes();
+        br.type         = QStringLiteral("contacts");
         br.lastModified = pr.lastModified;
         br.contentHash  = sha256Hex(br.data);
         out.append(br);
@@ -137,13 +135,10 @@ ContactsBlobBackend::loadRecord(const QString &recordId)
     auto pr = m_palmBackend->loadPalmRecord(QStringLiteral("AddressDB"), rid);
     if (!pr) return std::nullopt;
 
-    QByteArray vcard = encodePalmToVcard(*pr);
-    if (vcard.isEmpty()) return std::nullopt;
-
     Kalburator::Sync::BackendRecord br;
     br.id           = recordId;
-    br.data         = vcard;
-    br.type         = QStringLiteral("text/vcard");
+    br.data         = pr->toWireBytes();
+    br.type         = QStringLiteral("contacts");
     br.lastModified = pr->lastModified;
     br.contentHash  = sha256Hex(br.data);
     return br;
@@ -216,18 +211,16 @@ ContactsBlobBackend::modifiedSince(const QString &collectionId,
     QList<Kalburator::Sync::BackendRecord> out;
     if (slot < 0 || !m_palmBackend) return out;
 
-    // Forward to PalmBackend's underlying list, then filter+transcode.
+    // Forward to PalmBackend's underlying list, then filter.
     const auto records = m_palmBackend->loadPalmRecords(QStringLiteral("AddressDB"));
     for (const auto &pr : records) {
         if (static_cast<int>(pr.category) != slot) continue;
         if (since.isValid() && pr.lastModified <= since) continue;
-        QByteArray vcard = encodePalmToVcard(pr);
-        if (vcard.isEmpty()) continue;
 
         Kalburator::Sync::BackendRecord br;
         br.id           = idForPalmRecord(pr.recordId);
-        br.data         = vcard;
-        br.type         = QStringLiteral("text/vcard");
+        br.data         = pr.toWireBytes();
+        br.type         = QStringLiteral("contacts");
         br.lastModified = pr.lastModified;
         br.contentHash  = sha256Hex(br.data);
         out.append(br);
