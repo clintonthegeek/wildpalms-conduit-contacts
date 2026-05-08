@@ -2,6 +2,7 @@
 
 #include "contactsblobbackend.h"
 #include "contactsconflicthandler.h"
+#include "contactsdomainextension.h"
 #include "contactsvcardtranscoder.h"
 
 #include "palm/calendar/categoryappinforeader.h"
@@ -11,6 +12,7 @@
 #include "runtime/palmdeviceaccess.h"
 
 #include "conflictrecord.h"
+#include "transformationregistry.h"
 
 #include <KContacts/Addressee>
 #include <KContacts/VCardConverter>
@@ -30,6 +32,14 @@ ContactsBackendPlugin::ContactsBackendPlugin(QObject *parent)
     , m_categoryStore(std::make_unique<WildPalms::PalmCalendar::CategoryMappingStore>())
     , m_palmConfig(std::make_unique<WildPalms::PalmConflict::PalmBackendConfig>())
 {
+    // Phase Ia: register the (contacts, palm) peer shape and palm <-> vcard4
+    // edges with the process-wide TransformationRegistry as soon as the
+    // plugin is constructed. This is path (a) from Task 13 (plugin
+    // self-registers its peer shape). Idempotent — TransformationRegistry's
+    // registerEdge accepts identical re-registration without asserting,
+    // so multiple plugin instances in the same process are safe.
+    ContactsDomainExtension::registerWith(
+        Kalburator::Shape::TransformationRegistry::instance());
 }
 
 ContactsBackendPlugin::~ContactsBackendPlugin() = default;

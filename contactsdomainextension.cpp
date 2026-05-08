@@ -1,5 +1,6 @@
 #include "contactsdomainextension.h"
 
+#include "domainregistry.h"
 #include "palmtovcardtransformation.h"
 #include "propertycatalogue.h"
 #include "transformationregistry.h"
@@ -31,6 +32,30 @@ void ContactsDomainExtension::registerWith(TransformationRegistry &registry)
 {
     const Shape palm     { DomainId{"contacts"}, EncodingId{"palm"}   };
     const Shape canonical{ DomainId{"contacts"}, EncodingId{"vcard4"} };
+
+    // Phase Ia Task 15: ensure libkalburator's stock domain plugins
+    // (including the contacts plugin that owns vcard4) have populated
+    // the TransformationRegistry before we register edges that reference
+    // their shapes. DomainRegistry::initialize is idempotent (a no-op on
+    // subsequent calls), so this is cheap and safe to call from the
+    // ContactsBackendPlugin constructor regardless of process startup
+    // order.
+    DomainRegistry::instance().initialize(registry);
+
+    // Defensive: if libkalburator's contacts domain plugin's
+    // static-init registrar didn't run in this address space (e.g.
+    // because contactsdomainplugin.cpp is in a static library that's
+    // included via plain link rather than --whole-archive — the
+    // wildpalms_contacts_v2.so plugin module hits this case), the
+    // initialize() call above leaves vcard4 unregistered. We need
+    // vcard4 in the registry before registerEdge for the palm <-> v4
+    // edges below, otherwise Q_ASSERT_X("to-shape not registered")
+    // fires. Register a minimal placeholder catalogue; libkalburator's
+    // own registerEdges, when it eventually runs, replaces the
+    // catalogue under the same shape key (registerShape is idempotent).
+    if (registry.catalogueFor(canonical) == nullptr) {
+        registry.registerShape(canonical, {});
+    }
 
     // registerShape is idempotent; safe to re-call.
     registry.registerShape(palm, makePalmCatalogue());
