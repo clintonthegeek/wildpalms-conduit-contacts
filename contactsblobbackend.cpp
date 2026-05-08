@@ -1,7 +1,5 @@
 #include "contactsblobbackend.h"
 
-#include "contactsvcardtranscoder.h"
-
 #include "palm/calendar/categorymappingstore.h"
 #include "palm/sync/palmbackend.h"
 #include "palm/sync/palmrecord.h"
@@ -150,11 +148,11 @@ QString ContactsBlobBackend::createRecord(
 {
     const int slot = slotFromCollectionId(collectionId);
     if (slot < 0 || !m_palmBackend) return {};
+    if (record.data.isEmpty()) return {};
 
-    auto prOpt = decodeVcardToPalm(record.data, slot);
-    if (!prOpt) return {};
-
-    auto pr = *prOpt;
+    // Phase Ia: callers (the engine, after demoting through the
+    // registered edge) hand us palm-native bytes. Deserialize directly.
+    auto pr = WildPalms::PalmSync::PalmRecord::fromWireBytes(record.data);
     pr.category     = static_cast<std::uint8_t>(slot);
     pr.recordId     = 0;   // device assigns
     pr.lastModified = record.lastModified.isValid()
@@ -172,6 +170,7 @@ bool ContactsBlobBackend::updateRecord(
 {
     std::uint32_t rid = 0;
     if (!decodeId(record.id, &rid) || !m_palmBackend) return false;
+    if (record.data.isEmpty()) return false;
 
     // Look up the existing record to recover its slot (the
     // BackendRecord's id alone doesn't carry the slot).
@@ -180,10 +179,9 @@ bool ContactsBlobBackend::updateRecord(
     if (!existing) return false;
     const int slot = static_cast<int>(existing->category);
 
-    auto prOpt = decodeVcardToPalm(record.data, slot);
-    if (!prOpt) return false;
-
-    auto pr = *prOpt;
+    // Phase Ia: callers hand us palm-native bytes (engine demotes
+    // through the registered edge). Deserialize directly.
+    auto pr = WildPalms::PalmSync::PalmRecord::fromWireBytes(record.data);
     pr.recordId     = rid;
     pr.category     = static_cast<std::uint8_t>(slot);
     pr.lastModified = record.lastModified.isValid()
