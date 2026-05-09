@@ -1,6 +1,6 @@
 #include "contactsbackendplugin.h"
 
-#include "contactsblobbackend.h"
+#include "palmcontactsbackend.h"
 #include "contactsconflicthandler.h"
 #include "contactsdomainextension.h"
 #include "contactsvcardtranscoder.h"
@@ -75,7 +75,7 @@ ContactsBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *d
         QStringLiteral("AddressDB"),
         m_palmBackend->readAppBlock(QStringLiteral("AddressDB")));
 
-    return std::make_unique<ContactsBlobBackend>(m_palmBackend.get(), m_categoryStore.get());
+    return std::make_unique<PalmContactsBackend>(m_palmBackend.get(), m_categoryStore.get());
 }
 
 Kalburator::Sync::QSyncCore::ConflictHandler *

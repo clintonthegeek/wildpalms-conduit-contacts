@@ -3,7 +3,6 @@ find_package(KF6 REQUIRED COMPONENTS Contacts)
 kcoreaddons_add_plugin(wildpalms_contacts_v2
     SOURCES
         contactsbackendplugin.cpp     contactsbackendplugin.h
-        contactsblobbackend.cpp       contactsblobbackend.h
         palmcontactsbackend.cpp       palmcontactsbackend.h
         contactsconflicthandler.cpp   contactsconflicthandler.h
         contactsvcardtranscoder.cpp   contactsvcardtranscoder.h
