@@ -52,7 +52,7 @@ PalmContactsBackend::~PalmContactsBackend() = default;
 QList<Kalburator::Shape::Shape> PalmContactsBackend::nativeShapes() const
 {
     return { { Kalburator::Shape::DomainId{QStringLiteral("contacts")},
-               Kalburator::Shape::EncodingId{QStringLiteral("vcard4")} } };
+               Kalburator::Shape::EncodingId{QStringLiteral("palm")} } };
 }
 
 QString PalmContactsBackend::backendId()   const { return QStringLiteral("palm-contacts"); }
