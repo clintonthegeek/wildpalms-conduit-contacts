@@ -39,11 +39,12 @@ public:
         backendContributions() const override { return {}; }
 
     // Plugin identity
-    QString pluginId()    const { return QStringLiteral("contacts"); }
-    QString displayName() const;
-    QIcon   icon()        const;
-    QString description() const;
-    QString version()     const;
+    QString     pluginId()         const { return QStringLiteral("contacts"); }
+    QString     displayName()      const;
+    QIcon       icon()             const;
+    QString     description()      const;
+    QString     version()          const;
+    QStringList claimedDatabases() const { return {QStringLiteral("AddressDB")}; }
 
     // Palm backend — called directly by PalmRuntime (Task 6)
     std::unique_ptr<Kalburator::Sync::SyncBackend>
