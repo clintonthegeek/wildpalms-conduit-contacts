@@ -27,9 +27,8 @@ Q_LOGGING_CATEGORY(WP_CONTACTS_PLUGIN, "wildpalms.contacts.plugin")
 
 namespace WildPalms::ContactsPlugin {
 
-ContactsBackendPlugin::ContactsBackendPlugin(QObject *parent)
-    : QObject(parent)
-    , m_categoryStore(std::make_unique<WildPalms::PalmCalendar::CategoryMappingStore>())
+ContactsBackendPlugin::ContactsBackendPlugin()
+    : m_categoryStore(std::make_unique<WildPalms::PalmCalendar::CategoryMappingStore>())
     , m_palmConfig(std::make_unique<WildPalms::PalmConflict::PalmBackendConfig>())
 {
     // Phase Ia: register the (contacts, palm) peer shape and palm <-> vcard4
@@ -44,7 +43,6 @@ ContactsBackendPlugin::ContactsBackendPlugin(QObject *parent)
 
 ContactsBackendPlugin::~ContactsBackendPlugin() = default;
 
-QString ContactsBackendPlugin::pluginId()    const { return QStringLiteral("contacts"); }
 QString ContactsBackendPlugin::displayName() const { return QStringLiteral("Contacts"); }
 QIcon   ContactsBackendPlugin::icon()        const
 {
@@ -57,12 +55,7 @@ QString ContactsBackendPlugin::description() const
 }
 QString ContactsBackendPlugin::version()     const { return QStringLiteral("2.0"); }
 
-QStringList ContactsBackendPlugin::claimedDatabases() const
-{
-    return { QStringLiteral("AddressDB") };
-}
-
-std::unique_ptr<Kalburator::Sync::IBlobBackend>
+std::unique_ptr<Kalburator::Sync::SyncBackend>
 ContactsBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device)
 {
     if (!device) return nullptr;
@@ -78,7 +71,7 @@ ContactsBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *d
     return std::make_unique<PalmContactsBackend>(m_palmBackend.get(), m_categoryStore.get());
 }
 
-Kalburator::Sync::QSyncCore::ConflictHandler *
+Kalburator::Conflict::ConflictHandler *
 ContactsBackendPlugin::createConflictHandler()
 {
     if (!m_device) {
@@ -92,7 +85,7 @@ ContactsBackendPlugin::createConflictHandler()
 }
 
 void ContactsBackendPlugin::enrichConflictSnapshot(
-    Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot,
+    Kalburator::Conflict::RecordSnapshot &snapshot,
     bool /*isSourceSide*/) const
 {
     if (snapshot.content.isEmpty()) return;
@@ -112,7 +105,7 @@ void ContactsBackendPlugin::enrichConflictSnapshot(
 }
 
 QString ContactsBackendPlugin::formatConflictRecordHtml(
-    const Kalburator::Sync::QSyncCore::RecordSnapshot &snapshot) const
+    const Kalburator::Conflict::RecordSnapshot &snapshot) const
 {
     QString html;
     const QString title   = snapshot.metadata.value(QStringLiteral("title")).toString();
@@ -129,11 +122,3 @@ QString ContactsBackendPlugin::formatConflictRecordHtml(
 }
 
 } // namespace WildPalms::ContactsPlugin
-
-#include <KPluginFactory>
-
-K_PLUGIN_FACTORY_WITH_JSON(ContactsBackendPluginFactory,
-                           "contacts-backend-plugin.json",
-                           registerPlugin<WildPalms::ContactsPlugin::ContactsBackendPlugin>();)
-
-#include "contactsbackendplugin.moc"

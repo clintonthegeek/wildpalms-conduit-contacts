@@ -1,6 +1,5 @@
 #include "contactsdomainextension.h"
 
-#include "domainregistry.h"
 #include "palmtovcardtransformation.h"
 #include "propertycatalogue.h"
 #include "transformationregistry.h"
@@ -33,15 +32,13 @@ void ContactsDomainExtension::registerWith(TransformationRegistry &registry)
     const Shape palm     { DomainId{"contacts"}, EncodingId{"palm"}   };
     const Shape canonical{ DomainId{"contacts"}, EncodingId{"vcard4"} };
 
-    // Phase Ia Task 15: ensure libkalburator's stock domain plugins
-    // (including the contacts plugin that owns vcard4) have populated
-    // the TransformationRegistry before we register edges that reference
-    // their shapes. DomainRegistry::initialize is idempotent (a no-op on
-    // subsequent calls), so this is cheap and safe to call from the
-    // ContactsBackendPlugin constructor regardless of process startup
-    // order.
-    DomainRegistry::instance().initialize(registry);
-
+    // K.7: DomainRegistry::initialize() was removed; stock plugin shapes
+    // are now registered by Kalburator::registerStockPlugins() at
+    // PluginManager load time. The defensive fallback below handles the
+    // case where registerStockPlugins() hasn't run in this address space
+    // (e.g. in WildPalms unit tests that don't go through the full
+    // plugin init path).
+    //
     // Defensive: if libkalburator's contacts domain plugin's
     // static-init registrar didn't run in this address space (e.g.
     // because contactsdomainplugin.cpp is in a static library that's

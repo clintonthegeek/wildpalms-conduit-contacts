@@ -34,16 +34,16 @@ namespace WildPalms::ContactsPlugin {
  * Lifetime: does NOT own device or config. Both must outlive the
  * handler.
  */
-class ContactsConflictHandler : public Kalburator::Sync::QSyncCore::ConflictHandler
+class ContactsConflictHandler : public Kalburator::Conflict::ConflictHandler
 {
 public:
     ContactsConflictHandler(WildPalms::PalmSync::IPalmDatabaseAccess *device,
                             const WildPalms::PalmConflict::PalmBackendConfig *config);
     ~ContactsConflictHandler() override;
 
-    Kalburator::Sync::QSyncCore::ConflictDecision handleConflict(
-        Kalburator::Sync::QSyncCore::ConflictRecord &conflict,
-        const Kalburator::Sync::QSyncCore::ConflictPolicy &policy) override;
+    Kalburator::Conflict::ConflictDecision handleConflict(
+        Kalburator::Conflict::ConflictRecord &conflict,
+        const Kalburator::Conflict::ConflictPolicy &policy) override;
 
     bool canPrompt() const override { return false; }
 

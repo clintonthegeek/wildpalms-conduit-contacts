@@ -125,9 +125,9 @@ ContactsConflictHandler::ContactsConflictHandler(
 
 ContactsConflictHandler::~ContactsConflictHandler() = default;
 
-Kalburator::Sync::QSyncCore::ConflictDecision ContactsConflictHandler::handleConflict(
-    Kalburator::Sync::QSyncCore::ConflictRecord &conflict,
-    const Kalburator::Sync::QSyncCore::ConflictPolicy &policy)
+Kalburator::Conflict::ConflictDecision ContactsConflictHandler::handleConflict(
+    Kalburator::Conflict::ConflictRecord &conflict,
+    const Kalburator::Conflict::ConflictPolicy &policy)
 {
     DecodedSide source = decodeSide(conflict.source.content);
     DecodedSide target = decodeSide(conflict.target.content);
@@ -150,7 +150,7 @@ Kalburator::Sync::QSyncCore::ConflictDecision ContactsConflictHandler::handleCon
     Contact merged = unionMerge(source.contact, target.contact);
     conflict.mergedContent = buildMergedVcard(source.record, merged);
     m_lastOverlay = QStringLiteral("field-union");
-    return Kalburator::Sync::QSyncCore::ConflictDecision::Merge;
+    return Kalburator::Conflict::ConflictDecision::Merge;
 }
 
 } // namespace WildPalms::ContactsPlugin
