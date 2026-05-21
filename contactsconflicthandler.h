@@ -1,7 +1,7 @@
 #ifndef WILDPALMS_CONTACTS_CONTACTSCONFLICTHANDLER_H
 #define WILDPALMS_CONTACTS_CONTACTSCONFLICTHANDLER_H
 
-#include "conflictpolicy.h"   // brings in QSyncCore::ConflictHandler
+#include "conflictpolicy.h"   // brings in Kalburator::Conflict::ConflictHandler
 
 #include <memory>
 
