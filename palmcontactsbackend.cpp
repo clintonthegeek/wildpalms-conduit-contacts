@@ -8,19 +8,12 @@
 #include "collectioninfo.h"
 #include "shape.h"
 
-#include <QCryptographicHash>
 #include <QDateTime>
 #include <QStringList>
 
 namespace WildPalms::ContactsPlugin {
 
 namespace {
-
-QString sha256Hex(const QByteArray &bytes)
-{
-    return QString::fromLatin1(
-        QCryptographicHash::hash(bytes, QCryptographicHash::Sha256).toHex());
-}
 
 QString idForPalmRecord(std::uint32_t recordId)
 {
@@ -119,7 +112,7 @@ QList<Kalburator::Sync::BackendRecord> PalmContactsBackend::loadRecords(
         br.data         = pr.toWireBytes();
         br.type         = QStringLiteral("contacts");
         br.lastModified = pr.lastModified;
-        br.contentHash  = sha256Hex(br.data);
+        br.contentHash  = pr.contentHash();
         out.append(br);
     }
     return out;
@@ -138,7 +131,7 @@ PalmContactsBackend::loadRecord(const QString &recordId)
     br.data         = pr->toWireBytes();
     br.type         = QStringLiteral("contacts");
     br.lastModified = pr->lastModified;
-    br.contentHash  = sha256Hex(br.data);
+    br.contentHash  = pr->contentHash();
     return br;
 }
 
@@ -211,7 +204,7 @@ PalmContactsBackend::modifiedSince(const QString &collectionId,
         br.data         = pr.toWireBytes();
         br.type         = QStringLiteral("contacts");
         br.lastModified = pr.lastModified;
-        br.contentHash  = sha256Hex(br.data);
+        br.contentHash  = pr.contentHash();
         out.append(br);
     }
     return out;
