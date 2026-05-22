@@ -117,18 +117,23 @@ void ContactView::loadContacts()
         return;
     }
 
-    QString contactsPath = m_syncPath + QStringLiteral("/contacts");
-    QDir contactsDir(contactsPath);
-
-    if (!contactsDir.exists()) {
+    // Aggregate-read across all per-Palm-category subdirs under
+    // <sync>/rawfiles/contacts/<col>/ (PalmRuntime writes one dir per
+    // Palm category — palm_contact_0..palm_contact_3).
+    QDir rawfilesDir(m_syncPath + QStringLiteral("/rawfiles/contacts"));
+    if (!rawfilesDir.exists()) {
         m_contactList->addItem(i18n("No contacts found"));
         return;
     }
-
-    // Load all .vcf files from contacts directory
     QStringList filters;
     filters << QStringLiteral("*.vcf");
-    QFileInfoList files = contactsDir.entryInfoList(filters, QDir::Files, QDir::Name);
+    QFileInfoList files;
+    const QFileInfoList colDirs = rawfilesDir.entryInfoList(
+        QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+    for (const QFileInfo &col : colDirs) {
+        files.append(QDir(col.filePath()).entryInfoList(
+            filters, QDir::Files, QDir::Name));
+    }
 
     for (const QFileInfo &fileInfo : files) {
         ContactItem contact = parseVCard(fileInfo.filePath());
