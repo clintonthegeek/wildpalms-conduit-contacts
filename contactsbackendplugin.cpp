@@ -121,4 +121,10 @@ QString ContactsBackendPlugin::formatConflictRecordHtml(
     return html;
 }
 
+QStringList ContactsBackendPlugin::categorySlotNames() const
+{
+    if (!m_categoryStore) return {};
+    return m_categoryStore->sixteenSlotNames(primaryDbName());
+}
+
 } // namespace WildPalms::ContactsPlugin
