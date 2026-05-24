@@ -49,25 +49,24 @@ QByteArray VCardToPalmStage::transform(const QByteArray &sourceBytes) const
 LossProfile vcardToPalmLoss()
 {
     LossProfile p;
-    p.level = LossLevel::IntraDomainLossy;
-    p.dropped.insert(PropertyId{QStringLiteral("photo")});
-    p.dropped.insert(PropertyId{QStringLiteral("anniversary")});
-    p.dropped.insert(PropertyId{QStringLiteral("kind")});
-    p.dropped.insert(PropertyId{QStringLiteral("member")});
-    p.dropped.insert(PropertyId{QStringLiteral("lang")});
-    p.dropped.insert(PropertyId{QStringLiteral("gender")});
-    p.dropped.insert(PropertyId{QStringLiteral("related")});
-    p.dropped.insert(PropertyId{QStringLiteral("geo")});
-    p.dropped.insert(PropertyId{QStringLiteral("tz")});
-    p.dropped.insert(PropertyId{QStringLiteral("x-custom")});
+    // Palm AddressDB has no slot for these vCard 4.0 properties — genuinely dropped.
+    // (Richer Reversible/providerExtras treatment is Phase 2, not track-to-green.)
+    p.affected.insert(PropertyId{QStringLiteral("photo")},       LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("anniversary")}, LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("kind")},        LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("member")},      LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("lang")},        LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("gender")},      LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("related")},     LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("geo")},         LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("tz")},          LossKind::Dropped);
+    p.affected.insert(PropertyId{QStringLiteral("x-custom")},    LossKind::Dropped);
     return p;
 }
 
 LossProfile palmToVCardLoss()
 {
-    LossProfile p;
-    p.level = LossLevel::Lossless;
-    return p;
+    return {};  // lossless: palm -> vcard4 preserves everything via X-WP-PALM-* stamps
 }
 
 } // namespace WildPalms::ContactsPlugin
