@@ -57,6 +57,15 @@ void ContactsDomainExtension::registerWith(TransformationRegistry &registry)
     // registerShape is idempotent; safe to re-call.
     registry.registerShape(palm, makePalmCatalogue());
 
+    // PHASE 2 (verify-and-lock, 2026-05-24): contacts rides the shape graph via
+    // palm -> vcard4 -> canon. We register only the palm <-> vcard4 edges; the
+    // vcard4 <-> canon hop is libkalburator's (ContactsStockShapes). Palm identity
+    // (RECORDID + secret bit) survives the canon round-trip because libkalburator's
+    // VCard4ToCanonStage collects all KContacts customs into providerExtras["x-vcard"]
+    // and CanonToVCard4Stage re-emits them. The CATEGORY-SLOT custom rides along but
+    // is NOT restored by the demote (slotHint=-1); the backend remaps slots on write.
+    // Verified by tests/plugins/contacts/tst_contacts_canon_roundtrip.cpp.
+
     // palm -> vcard4 (lossless under X-WP-PALM-* extension stamping)
     registry.registerEdge(TransformationEdge{
         palm, canonical,
