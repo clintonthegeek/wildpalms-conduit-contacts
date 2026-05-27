@@ -1,19 +1,19 @@
 #ifndef WILDPALMS_CONTACTS_CONTACTSDOMAINEXTENSION_H
 #define WILDPALMS_CONTACTS_CONTACTSDOMAINEXTENSION_H
 
-namespace Kalburator::Shape { class TransformationRegistry; }
+#include <shapecontribution.h>
 
 namespace WildPalms::ContactsPlugin {
 
-/// Registers the (contacts, palm) peer shape and palm <-> vcard4
-/// transformation edges with the process-wide TransformationRegistry.
-///
-/// Idempotent. Safe to call before or after KalburatorDomainContacts'
-/// own registerEdges() runs, as long as the contacts domain hasn't
-/// been frozen by a prior compile() call.
-class ContactsDomainExtension {
+// O7: contributes the (contacts, palm) peer shape and palm<->vcard4 edges to
+// the shape graph. The vcard4<->canon hop is libkalburator's (ContactsStockShapes).
+// PluginManager registers this into the injected ShapeRegistries.
+class ContactsPalmShapes : public Kalburator::Shape::ShapeContribution {
 public:
-    static void registerWith(Kalburator::Shape::TransformationRegistry& registry);
+    Kalburator::Shape::DomainId targetDomain() const override;
+    QList<std::pair<Kalburator::Shape::Shape, Kalburator::Shape::PropertyCatalogue>>
+        peerShapes() const override;
+    QList<Kalburator::Shape::TransformationEdge> edges() const override;
 };
 
 } // namespace WildPalms::ContactsPlugin

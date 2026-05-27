@@ -12,7 +12,6 @@
 #include "runtime/palmdeviceaccess.h"
 
 #include "conflictrecord.h"
-#include "transformationregistry.h"
 
 #include <KContacts/Addressee>
 #include <KContacts/VCardConverter>
@@ -31,17 +30,17 @@ ContactsBackendPlugin::ContactsBackendPlugin()
     : m_categoryStore(std::make_unique<WildPalms::PalmCalendar::CategoryMappingStore>())
     , m_palmConfig(std::make_unique<WildPalms::PalmConflict::PalmBackendConfig>())
 {
-    // Phase Ia: register the (contacts, palm) peer shape and palm <-> vcard4
-    // edges with the process-wide TransformationRegistry as soon as the
-    // plugin is constructed. This is path (a) from Task 13 (plugin
-    // self-registers its peer shape). Idempotent — TransformationRegistry's
-    // registerEdge accepts identical re-registration without asserting,
-    // so multiple plugin instances in the same process are safe.
-    ContactsDomainExtension::registerWith(
-        Kalburator::Shape::TransformationRegistry::instance());
+    // O7: shape registration moved out of the ctor into shapeContributions();
+    // PluginManager registers the contribution into the injected ShapeRegistries.
 }
 
 ContactsBackendPlugin::~ContactsBackendPlugin() = default;
+
+QList<std::shared_ptr<Kalburator::Shape::ShapeContribution>>
+ContactsBackendPlugin::shapeContributions() const
+{
+    return { std::make_shared<ContactsPalmShapes>() };
+}
 
 QString ContactsBackendPlugin::displayName() const { return QStringLiteral("Contacts"); }
 QIcon   ContactsBackendPlugin::icon()        const
