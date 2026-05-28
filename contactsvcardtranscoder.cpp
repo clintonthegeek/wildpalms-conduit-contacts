@@ -2,6 +2,7 @@
 
 #include "palm/codecs/contactcodec.h"
 #include "palm/codecs/kde_pim_convert.h"
+#include "palm/calendar/categorymappingstore.h"
 
 #include <KContacts/Addressee>
 #include <KContacts/VCardConverter>
@@ -10,14 +11,9 @@
 
 namespace WildPalms::ContactsPlugin {
 
-namespace {
-
-constexpr const char *kCategorySlotProp = "X-WP-PALM-CATEGORY-SLOT";
-constexpr const char *kRecordIdProp     = "X-WP-PALM-RECORDID";
-
-} // namespace
-
-QByteArray encodePalmToVcard(const WildPalms::PalmSync::PalmRecord &record)
+QByteArray encodePalmToVcard(const WildPalms::PalmSync::PalmRecord &record,
+                             const WildPalms::PalmCalendar::CategoryMappingStore *cats,
+                             const QString &dbName)
 {
     if (record.data.isEmpty()) return {};
     auto contact = WildPalms::PalmCodecs::decodeContact(QByteArrayView(record.data));
@@ -42,12 +38,23 @@ QByteArray encodePalmToVcard(const WildPalms::PalmSync::PalmRecord &record)
                                QStringLiteral("1"));
     }
 
+    // Carry the Palm category slot as the vCard CATEGORIES property (name-based).
+    // libkalburator's vcard4<->canon stage lifts it into canon `categories`.
+    // If the slot has a name in the store, it is written; otherwise nothing is
+    // emitted and the return trip falls back to Unfiled (slot 0).
+    if (cats && record.category != 0) {
+        const QString nm = cats->slotName(dbName, record.category);
+        if (!nm.isEmpty()) addressee.setCategories(QStringList{nm});
+    }
+
     KContacts::VCardConverter conv;
     return conv.createVCard(addressee, KContacts::VCardConverter::v4_0);
 }
 
 std::optional<WildPalms::PalmSync::PalmRecord>
-decodeVcardToPalm(const QByteArray &vcardBytes, int slotHint)
+decodeVcardToPalm(const QByteArray &vcardBytes,
+                  const WildPalms::PalmCalendar::CategoryMappingStore *cats,
+                  const QString &dbName)
 {
     if (vcardBytes.isEmpty()) return std::nullopt;
 
@@ -62,9 +69,15 @@ decodeVcardToPalm(const QByteArray &vcardBytes, int slotHint)
     QByteArray bytes = WildPalms::PalmCodecs::encodeContact(contact);
     if (bytes.isEmpty()) return std::nullopt;
 
+    // Map the first CATEGORIES name back to a Palm slot. No store or no
+    // categories => slot 0 (Unfiled).
+    const int slot = (cats && !addressee.categories().isEmpty())
+        ? cats->slotForName(dbName, addressee.categories().constFirst())
+        : 0;
+
     WildPalms::PalmSync::PalmRecord pr;
     pr.data     = bytes;
-    pr.category = static_cast<std::uint8_t>(slotHint);
+    pr.category = static_cast<std::uint8_t>(slot);
 
     const bool secrecyPrivate =
         addressee.secrecy().type() == KContacts::Secrecy::Private

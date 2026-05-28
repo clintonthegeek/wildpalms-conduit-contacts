@@ -3,22 +3,34 @@
 
 #include "transformationedge.h"
 
+namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
+
 namespace WildPalms::ContactsPlugin {
 
 /// (contacts, palm) → (contacts, vcard4)
 /// Body delegates to encodePalmToVcard. Decodes the source bytes as a
-/// PalmRecord first.
+/// PalmRecord first. Borrows a (nullable) CategoryMappingStore to carry
+/// the Palm category slot into the vCard CATEGORIES property.
 class PalmToVCardStage : public Kalburator::Shape::TransformationStage {
 public:
+    explicit PalmToVCardStage(const WildPalms::PalmCalendar::CategoryMappingStore *cats = nullptr);
     QByteArray transform(const QByteArray &sourceBytes) const override;
+
+private:
+    const WildPalms::PalmCalendar::CategoryMappingStore *m_cats = nullptr;
 };
 
 /// (contacts, vcard4) → (contacts, palm)
 /// Body delegates to decodeVcardToPalm. Encodes the resulting PalmRecord
-/// back to wire bytes for the backend.
+/// back to wire bytes for the backend. Borrows a (nullable) CategoryMappingStore
+/// to map the vCard CATEGORIES name back to a Palm category slot.
 class VCardToPalmStage : public Kalburator::Shape::TransformationStage {
 public:
+    explicit VCardToPalmStage(const WildPalms::PalmCalendar::CategoryMappingStore *cats = nullptr);
     QByteArray transform(const QByteArray &sourceBytes) const override;
+
+private:
+    const WildPalms::PalmCalendar::CategoryMappingStore *m_cats = nullptr;
 };
 
 /// vcard4 → palm: lossy (Palm AddressDB has fixed fields; most of v4

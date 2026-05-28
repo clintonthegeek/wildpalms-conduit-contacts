@@ -25,6 +25,12 @@ PropertyCatalogue makePalmCatalogue()
 
 } // namespace
 
+ContactsPalmShapes::ContactsPalmShapes(
+    const WildPalms::PalmCalendar::CategoryMappingStore *cats)
+    : m_cats(cats)
+{
+}
+
 DomainId ContactsPalmShapes::targetDomain() const
 {
     return DomainId{QStringLiteral("contacts")};
@@ -45,8 +51,8 @@ QList<TransformationEdge> ContactsPalmShapes::edges() const
     // The vcard4 endpoint is registered by libkalburator's ContactsStockShapes,
     // which loads earlier in the same PluginManager batch.
     return {
-        TransformationEdge{ palm, canonical, palmToVCardLoss(), std::make_shared<PalmToVCardStage>() },
-        TransformationEdge{ canonical, palm, vcardToPalmLoss(), std::make_shared<VCardToPalmStage>() },
+        TransformationEdge{ palm, canonical, palmToVCardLoss(), std::make_shared<PalmToVCardStage>(m_cats) },
+        TransformationEdge{ canonical, palm, vcardToPalmLoss(), std::make_shared<VCardToPalmStage>(m_cats) },
     };
 }
 

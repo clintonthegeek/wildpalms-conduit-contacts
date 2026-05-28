@@ -39,7 +39,13 @@ ContactsBackendPlugin::~ContactsBackendPlugin() = default;
 QList<std::shared_ptr<Kalburator::Shape::ShapeContribution>>
 ContactsBackendPlugin::shapeContributions() const
 {
-    return { std::make_shared<ContactsPalmShapes>() };
+    // Timing contract: this runs at PluginManager load time (PalmRuntime ctor),
+    // BEFORE createPalmBackend() populates m_categoryStore from the AppInfo block
+    // at device-connect. The contribution/stages keep a borrowed POINTER (not a
+    // snapshot), so by the time any transform runs (post-connect) the store is
+    // populated. Do not cache the store by value, and do not assume it is
+    // populated here.
+    return { std::make_shared<ContactsPalmShapes>(m_categoryStore.get()) };
 }
 
 QString ContactsBackendPlugin::displayName() const { return QStringLiteral("Contacts"); }

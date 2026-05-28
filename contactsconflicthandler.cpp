@@ -27,7 +27,7 @@ struct DecodedSide {
 DecodedSide decodeSide(const QByteArray &vcardBytes)
 {
     DecodedSide out;
-    auto pr = WildPalms::ContactsPlugin::decodeVcardToPalm(vcardBytes, /*slotHint*/ 0);
+    auto pr = WildPalms::ContactsPlugin::decodeVcardToPalm(vcardBytes, /*cats*/ nullptr, /*dbName*/ {});
     if (!pr.has_value()) return out;
     auto c = decodeContact(QByteArrayView(pr->data));
     if (!c.has_value()) return out;
@@ -111,7 +111,7 @@ QByteArray buildMergedVcard(const PalmRecord &peer, const Contact &merged)
 {
     PalmRecord pr = peer;
     pr.data = encodeContact(merged);
-    return WildPalms::ContactsPlugin::encodePalmToVcard(pr);
+    return WildPalms::ContactsPlugin::encodePalmToVcard(pr, /*cats*/ nullptr, /*dbName*/ {});
 }
 
 } // namespace

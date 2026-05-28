@@ -7,43 +7,39 @@ using namespace Kalburator::Shape;
 
 namespace WildPalms::ContactsPlugin {
 
-namespace {
-
-// Source bytes for PalmToVCardStage are the wire serialization of a
-// PalmRecord — the exact format established by ContactsBlobBackend in
-// Task 14 / 16 / 17. PalmRecord::toWireBytes / fromWireBytes (Phase Ia
-// Task 11) are the round-trip primitive.
-WildPalms::PalmSync::PalmRecord palmRecordFromBytes(const QByteArray &bytes)
+PalmToVCardStage::PalmToVCardStage(
+    const WildPalms::PalmCalendar::CategoryMappingStore *cats)
+    : m_cats(cats)
 {
-    return WildPalms::PalmSync::PalmRecord::fromWireBytes(bytes);
 }
-
-QByteArray palmRecordToBytes(const WildPalms::PalmSync::PalmRecord &r)
-{
-    return r.toWireBytes();
-}
-
-} // namespace
 
 QByteArray PalmToVCardStage::transform(const QByteArray &sourceBytes) const
 {
     if (sourceBytes.isEmpty())
         return {};
-    const auto pr = palmRecordFromBytes(sourceBytes);
-    return encodePalmToVcard(pr);
+    const auto pr = WildPalms::PalmSync::PalmRecord::fromWireBytes(sourceBytes);
+    // Single-DB plugin: AddressDB is always the relevant database.
+    return encodePalmToVcard(pr, m_cats, QStringLiteral("AddressDB"));
+}
+
+VCardToPalmStage::VCardToPalmStage(
+    const WildPalms::PalmCalendar::CategoryMappingStore *cats)
+    : m_cats(cats)
+{
 }
 
 QByteArray VCardToPalmStage::transform(const QByteArray &sourceBytes) const
 {
     if (sourceBytes.isEmpty())
         return {};
-    // slotHint = -1 means "use whatever's in X-WP-PALM-CATEGORY-SLOT
-    // on the vCard". This is the round-trip discipline; the backend
-    // remaps slots authoritatively on write.
-    const auto prOpt = decodeVcardToPalm(sourceBytes, /*slotHint*/ -1);
+    // The category slot is derived from the vCard CATEGORIES property via
+    // the borrowed CategoryMappingStore (name -> slot). With no store / no
+    // categories the slot is 0 (Unfiled).
+    // Single-DB plugin: AddressDB is always the relevant database.
+    const auto prOpt = decodeVcardToPalm(sourceBytes, m_cats, QStringLiteral("AddressDB"));
     if (!prOpt)
         return {};
-    return palmRecordToBytes(*prOpt);
+    return prOpt->toWireBytes();
 }
 
 LossProfile vcardToPalmLoss()
