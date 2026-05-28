@@ -132,4 +132,10 @@ QStringList ContactsBackendPlugin::categorySlotNames() const
     return m_categoryStore->sixteenSlotNames(primaryDbName());
 }
 
+WildPalms::PalmCalendar::CategoryMappingStore *
+ContactsBackendPlugin::categoryStore() const
+{
+    return m_categoryStore.get();
+}
+
 } // namespace WildPalms::ContactsPlugin
