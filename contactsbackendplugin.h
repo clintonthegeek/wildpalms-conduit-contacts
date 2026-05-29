@@ -3,14 +3,18 @@
 
 #include <memory>
 
-#include "plugin.h"
+#include "plugins/pimplugin.h"
+
+class QIcon;
+class QWidget;
 
 namespace Kalburator::Conflict { struct RecordSnapshot; class ConflictHandler; }
 namespace Kalburator::Sync { class SyncBackend; }
+namespace WildPalms::ContactsPlugin { class HubContactsReader; }
 namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
 namespace WildPalms::PalmConflict { struct PalmBackendConfig; }
 namespace WildPalms::PalmSync { class PalmBackend; }
-namespace WildPalms::Runtime { class PalmDeviceAccess; }
+namespace WildPalms::Runtime { class PalmDeviceAccess; class PalmRuntime; }
 
 namespace WildPalms::ContactsPlugin {
 
@@ -27,7 +31,7 @@ namespace WildPalms::ContactsPlugin {
  *     delegation).
  *   - No main view (legacy ContactView stays on legacy conduit until E.16).
  */
-class ContactsBackendPlugin : public Kalburator::Plugin
+class ContactsBackendPlugin : public WildPalms::Plugins::PimPlugin
 {
 public:
     ContactsBackendPlugin();
@@ -62,6 +66,10 @@ public:
     // Task 3: borrowed accessor for hub<->remote routing translation.
     WildPalms::PalmCalendar::CategoryMappingStore *categoryStore() const;
 
+    // Sub-project D: PimPlugin lifecycle hooks.
+    void setHub(Kalburator::Sync::SyncBackend *hub) override;
+    void setRuntime(WildPalms::Runtime::PalmRuntime *runtime) override;
+
     // Palm backend — called directly by PalmRuntime (Task 6)
     std::unique_ptr<Kalburator::Sync::SyncBackend>
         createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device);
@@ -69,8 +77,11 @@ public:
     // Conflict handler
     Kalburator::Conflict::ConflictHandler *createConflictHandler();
 
-    // No main view for contacts (legacy ContactView stays on legacy conduit until E.16)
-    bool hasMainView() const { return false; }
+    // Sub-project D: contacts now has a main view (ContactView reads from hub).
+    bool     hasMainView()   const { return true; }
+    QWidget *createMainView(QWidget *parent) const;
+    QString  mainViewName()  const { return QStringLiteral("Contacts"); }
+    QIcon    mainViewIcon()  const;
 
     // Conflict presentation (called by conflict UI layer)
     void    enrichConflictSnapshot(
@@ -84,6 +95,11 @@ private:
     std::unique_ptr<WildPalms::PalmConflict::PalmBackendConfig>    m_palmConfig;
     std::unique_ptr<WildPalms::PalmSync::PalmBackend>              m_palmBackend;
     WildPalms::Runtime::PalmDeviceAccess *m_device = nullptr; // borrowed; cached for createConflictHandler
+
+    // Sub-project D: per-domain reader over the canonical hub; constructed
+    // in setHub, fed to ContactView in createMainView.
+    std::unique_ptr<WildPalms::ContactsPlugin::HubContactsReader> m_hubReader;
+    WildPalms::Runtime::PalmRuntime *m_runtime = nullptr;       // borrowed
 };
 
 } // namespace WildPalms::ContactsPlugin

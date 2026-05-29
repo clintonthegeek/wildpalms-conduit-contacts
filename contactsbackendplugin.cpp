@@ -1,5 +1,7 @@
 #include "contactsbackendplugin.h"
 
+#include "contactview.h"
+#include "hubcontactsreader.h"
 #include "palmcontactsbackend.h"
 #include "contactsconflicthandler.h"
 #include "contactsdomainextension.h"
@@ -10,6 +12,7 @@
 #include "palm/conflict/palmbackendconfig.h"
 #include "palm/sync/palmbackend.h"
 #include "runtime/palmdeviceaccess.h"
+#include "runtime/palmruntime.h"
 
 #include "conflictrecord.h"
 
@@ -19,6 +22,7 @@
 #include <QIcon>
 #include <QLoggingCategory>
 #include <QString>
+#include <QWidget>
 
 namespace {
 Q_LOGGING_CATEGORY(WP_CONTACTS_PLUGIN, "wildpalms.contacts.plugin")
@@ -136,6 +140,35 @@ WildPalms::PalmCalendar::CategoryMappingStore *
 ContactsBackendPlugin::categoryStore() const
 {
     return m_categoryStore.get();
+}
+
+void ContactsBackendPlugin::setHub(Kalburator::Sync::SyncBackend *hub)
+{
+    Q_ASSERT(hub);
+    m_hubReader = std::make_unique<WildPalms::ContactsPlugin::HubContactsReader>(
+        hub, QStringLiteral("palm:contacts"));
+}
+
+void ContactsBackendPlugin::setRuntime(WildPalms::Runtime::PalmRuntime *runtime)
+{
+    m_runtime = runtime;
+}
+
+QWidget *ContactsBackendPlugin::createMainView(QWidget *parent) const
+{
+    auto *v = new ContactView(parent);
+    v->setHubReader(m_hubReader.get());
+    if (m_runtime) {
+        QObject::connect(m_runtime,
+                         &WildPalms::Runtime::PalmRuntime::syncCompleted,
+                         v, &ContactView::refresh);
+    }
+    return v;
+}
+
+QIcon ContactsBackendPlugin::mainViewIcon() const
+{
+    return QIcon::fromTheme(QStringLiteral("view-pim-contacts"));
 }
 
 } // namespace WildPalms::ContactsPlugin

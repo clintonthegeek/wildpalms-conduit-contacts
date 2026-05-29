@@ -1,4 +1,5 @@
 #include "contactview.h"
+#include "hubcontactsreader.h"
 #include "widgets/common/categorymanager.h"
 #include "widgets/common/categorymodel.h"
 #include "widgets/common/categoryfilterwidget.h"
@@ -105,6 +106,11 @@ void ContactView::refresh()
     loadContacts();
 }
 
+void ContactView::setHubReader(WildPalms::ContactsPlugin::HubContactsReader *reader)
+{
+    m_hubReader = reader;
+}
+
 void ContactView::loadContacts()
 {
     m_contactList->clear();
@@ -112,31 +118,16 @@ void ContactView::loadContacts()
     m_itemToIndex.clear();
     m_detailsView->clear();
 
-    if (m_syncPath.isEmpty()) {
-        m_contactList->addItem(i18n("No sync folder selected"));
-        return;
-    }
-
-    // Aggregate-read across all per-Palm-category subdirs under
-    // <sync>/rawfiles/contacts/<col>/ (PalmRuntime writes one dir per
-    // Palm category — palm_contact_0..palm_contact_3).
-    QDir rawfilesDir(m_syncPath + QStringLiteral("/rawfiles/contacts"));
-    if (!rawfilesDir.exists()) {
+    if (!m_hubReader) {
         m_contactList->addItem(i18n("No contacts found"));
         return;
     }
-    QStringList filters;
-    filters << QStringLiteral("*.vcf");
-    QFileInfoList files;
-    const QFileInfoList colDirs = rawfilesDir.entryInfoList(
-        QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
-    for (const QFileInfo &col : colDirs) {
-        files.append(QDir(col.filePath()).entryInfoList(
-            filters, QDir::Files, QDir::Name));
-    }
 
-    for (const QFileInfo &fileInfo : files) {
-        ContactItem contact = parseVCard(fileInfo.filePath());
+    const QStringList ids = m_hubReader->listRecordIds();
+    for (const QString &recordId : ids) {
+        const QByteArray bytes = m_hubReader->recordBytes(recordId);
+        if (bytes.isEmpty()) continue;
+        ContactItem contact = parseVCardBytes(bytes, recordId);
         if (!contact.displayName.isEmpty()) {
             m_contacts.append(contact);
         }
@@ -182,25 +173,17 @@ void ContactView::applyFilter()
     }
 }
 
-ContactView::ContactItem ContactView::parseVCard(const QString &filePath) const
+ContactView::ContactItem ContactView::parseVCardBytes(const QByteArray &bytes,
+                                                       const QString &recordId) const
 {
     ContactItem contact;
-    contact.filePath = filePath;
+    contact.filePath = recordId;  // hub record id (opaque to view)
     contact.recordId = 0;
     contact.category = CategoryManager::unfiledCategoryName();
     contact.isPrivate = false;
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return contact;
-    }
-
-    QTextStream stream(&file);
-    QString rawContent = stream.readAll();
-    file.close();
-
     // Unfold continuation lines
-    QString content = unfoldVCardContent(rawContent);
+    QString content = unfoldVCardContent(QString::fromUtf8(bytes));
 
     // Split into lines
     QStringList lines = content.split(QRegularExpression(QStringLiteral("\\r?\\n")), Qt::SkipEmptyParts);

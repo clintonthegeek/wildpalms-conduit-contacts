@@ -16,6 +16,8 @@ add_library(wildpalms_contacts_static STATIC
     # ContactsBackendPlugin in Task 15.
     contactsdomainextension.cpp   contactsdomainextension.h
     hubcontactsreader.cpp         hubcontactsreader.h
+    # Sub-project D: ContactView reads from hub and joins the V2 sidebar.
+    contactview.cpp               contactview.h
 )
 
 target_include_directories(wildpalms_contacts_static

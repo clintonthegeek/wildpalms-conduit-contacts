@@ -14,6 +14,8 @@ class CategoryManager;
 class CategoryModel;
 class CategoryFilterWidget;
 
+namespace WildPalms::ContactsPlugin { class HubContactsReader; }
+
 /**
  * @brief Contact data browser view
  *
@@ -31,6 +33,7 @@ public:
 public Q_SLOTS:
     void loadFromPath(const QString &syncPath);
     void refresh();
+    void setHubReader(WildPalms::ContactsPlugin::HubContactsReader *reader);
 
 private Q_SLOTS:
     void onContactSelected(QListWidgetItem *current, QListWidgetItem *previous);
@@ -60,7 +63,7 @@ private:
     void setupUI();
     void loadContacts();
     void applyFilter();
-    ContactItem parseVCard(const QString &filePath) const;
+    ContactItem parseVCardBytes(const QByteArray &bytes, const QString &recordId) const;
     QString unfoldVCardContent(const QString &content) const;
     QString phoneLabelForType(const QString &typeParam) const;
     QString buildDetailHtml(const ContactItem &contact) const;
@@ -77,6 +80,7 @@ private:
     QTextEdit *m_detailsView;
 
     QString m_syncPath;
+    WildPalms::ContactsPlugin::HubContactsReader *m_hubReader = nullptr; // borrowed
     QList<ContactItem> m_contacts;
     QHash<QListWidgetItem*, int> m_itemToIndex;
 };
