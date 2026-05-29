@@ -142,7 +142,7 @@ ContactsBackendPlugin::categoryStore() const
     return m_categoryStore.get();
 }
 
-void ContactsBackendPlugin::setHub(Kalburator::Sync::SyncBackend *hub)
+void ContactsBackendPlugin::setHub(Kalburator::Sync::SyncBackendBase *hub)
 {
     Q_ASSERT(hub);
     m_hubReader = std::make_unique<WildPalms::ContactsPlugin::HubContactsReader>(

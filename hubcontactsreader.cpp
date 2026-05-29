@@ -1,6 +1,6 @@
 #include "hubcontactsreader.h"
 
-#include <syncbackend.h>
+#include <syncbackendbase.h>
 #include <backendrecord.h>
 
 namespace {
@@ -20,7 +20,7 @@ QString stripCollectionPrefix(const QString &recordId,
 
 namespace WildPalms::ContactsPlugin {
 
-HubContactsReader::HubContactsReader(Kalburator::Sync::SyncBackend *hub,
+HubContactsReader::HubContactsReader(Kalburator::Sync::SyncBackendBase *hub,
                                      QString collectionId)
     : m_hub(hub)
     , m_collectionId(std::move(collectionId))
