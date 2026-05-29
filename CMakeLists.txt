@@ -15,6 +15,7 @@ add_library(wildpalms_contacts_static STATIC
     # TransformationRegistry. Wired in from
     # ContactsBackendPlugin in Task 15.
     contactsdomainextension.cpp   contactsdomainextension.h
+    hubcontactsreader.cpp         hubcontactsreader.h
 )
 
 target_include_directories(wildpalms_contacts_static
