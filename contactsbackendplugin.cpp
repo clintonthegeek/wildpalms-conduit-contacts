@@ -64,7 +64,7 @@ QString ContactsBackendPlugin::description() const
 }
 QString ContactsBackendPlugin::version()     const { return QStringLiteral("2.0"); }
 
-std::unique_ptr<Kalburator::Sync::SyncBackend>
+std::unique_ptr<Kalburator::Sync::SyncBackendBase>
 ContactsBackendPlugin::createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device)
 {
     if (!device) return nullptr;

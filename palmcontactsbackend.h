@@ -1,7 +1,7 @@
 #ifndef WILDPALMS_CONTACTS_PALMCONTACTSBACKEND_H
 #define WILDPALMS_CONTACTS_PALMCONTACTSBACKEND_H
 
-#include "syncbackend.h"
+#include "syncbackendbase.h"
 
 #include <QObject>
 
@@ -10,7 +10,7 @@ namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
 
 namespace WildPalms::ContactsPlugin {
 
-class PalmContactsBackend final : public Kalburator::Sync::SyncBackend
+class PalmContactsBackend final : public Kalburator::Sync::SyncBackendBase
 {
     Q_OBJECT
 public:
@@ -56,19 +56,6 @@ public:
     static int     slotFromCollectionId(const QString &collectionId);
     static QString collectionIdForSlot(int slot);
 
-    // SyncBackend calendar pure-virtuals — stubs; dispatchBlobSync never calls these
-    void loadCalendars(const QString &) override {}
-    void storeCalendars(const QString &,
-                        const QList<KCalendarCore::MemoryCalendar *> &) override {}
-    void startSync(const QString &,
-                   KCalendarCore::MemoryCalendar *,
-                   const QList<KCalendarCore::Incidence::Ptr> &,
-                   const QList<KCalendarCore::Incidence::Ptr> &,
-                   const QMap<QString, QString> &) override {}
-    void removeItem(const QString &, const QString &) override {}
-    Kalburator::Sync::PushOperation *pushItems(
-        const QString &,
-        const QList<KCalendarCore::Incidence::Ptr> &) override { return nullptr; }
 
 Q_SIGNALS:
     void recordCreated(const QString &recordId);
