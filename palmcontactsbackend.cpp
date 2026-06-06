@@ -223,6 +223,38 @@ bool PalmContactsBackend::deleteRecord(const QString &recordId)
     return m_palmBackend->deletePalmRecord(QStringLiteral("AddressDB"), rid);
 }
 
+bool PalmContactsBackend::wipeCollection(const QString &collectionId)
+{
+    // Palm storage is whole-DB: the AddressDB holds every record
+    // regardless of which virtual sub-collection (slot or domain-level)
+    // the engine names. We wipe the entire database and let the
+    // subsequent push re-populate it from the hub.
+    //
+    // Classic Palm DB:  AddressDB (Address Book — Palm OS 1.0+, the wire
+    //                   format WP syncs against; creator 'addr', type 'DATA').
+    // Enhanced DB:      ContactsDB-PAdd (Palm OS 5+ Contacts app). WP does
+    //                   not sync it; clobber leaves it alone. The enhanced
+    //                   DB is best-effort dropped via IPalmDatabaseAccess
+    //                   when a deleteDatabase API exists on the device
+    //                   layer (deferred — see Task 9 follow-up).
+    Q_UNUSED(collectionId);
+    if (!m_palmBackend) return false;
+
+    bool ok = true;
+    // Iterate over a snapshot of the IDs so we don't trip the in-progress
+    // mutation invariants of PalmBackend's record cache.
+    QList<std::uint32_t> ids;
+    for (const auto &pr : m_palmBackend->loadPalmRecords(QStringLiteral("AddressDB"))) {
+        ids.append(pr.recordId);
+    }
+    for (const std::uint32_t rid : std::as_const(ids)) {
+        if (!m_palmBackend->deletePalmRecord(QStringLiteral("AddressDB"), rid)) {
+            ok = false;
+        }
+    }
+    return ok;
+}
+
 QList<Kalburator::Sync::BackendRecord>
 PalmContactsBackend::modifiedSince(const QString &collectionId,
                                    const QDateTime &since)

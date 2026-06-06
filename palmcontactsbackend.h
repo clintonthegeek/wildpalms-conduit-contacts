@@ -46,6 +46,14 @@ public:
     bool    updateRecord(const Kalburator::Sync::BackendRecord &record) override;
     bool    deleteRecord(const QString &recordId) override;
 
+    /// Clobber-sync entry point: drop every record from the Palm-side
+    /// AddressDB so the subsequent push from the hub lands into an empty
+    /// target. Used by SyncEngine's ExecutionOverride::clobber path
+    /// (libkalburator v0.65+). Always clears the entire AddressDB
+    /// regardless of which sub-collection (slot or domain-level) the
+    /// engine names — Palm storage is whole-DB.
+    bool    wipeCollection(const QString &collectionId) override;
+
     // IBlobBackend change detection
     QList<Kalburator::Sync::BackendRecord> modifiedSince(
         const QString &collectionId, const QDateTime &since) override;
