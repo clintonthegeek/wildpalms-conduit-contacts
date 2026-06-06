@@ -239,20 +239,7 @@ bool PalmContactsBackend::wipeCollection(const QString &collectionId)
     //                   layer (deferred — see Task 9 follow-up).
     Q_UNUSED(collectionId);
     if (!m_palmBackend) return false;
-
-    bool ok = true;
-    // Iterate over a snapshot of the IDs so we don't trip the in-progress
-    // mutation invariants of PalmBackend's record cache.
-    QList<std::uint32_t> ids;
-    for (const auto &pr : m_palmBackend->loadPalmRecords(QStringLiteral("AddressDB"))) {
-        ids.append(pr.recordId);
-    }
-    for (const std::uint32_t rid : std::as_const(ids)) {
-        if (!m_palmBackend->deletePalmRecord(QStringLiteral("AddressDB"), rid)) {
-            ok = false;
-        }
-    }
-    return ok;
+    return m_palmBackend->wipePalmDatabase(QStringLiteral("AddressDB"));
 }
 
 QList<Kalburator::Sync::BackendRecord>
