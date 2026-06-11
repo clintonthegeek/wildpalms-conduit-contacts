@@ -54,17 +54,25 @@ public:
     QIcon       icon()             const;
     QString     description()      const;
     QString     version()          const;
-    QStringList claimedDatabases() const { return {QStringLiteral("AddressDB")}; }
+    QStringList claimedDatabases() const override { return {QStringLiteral("AddressDB")}; }
+
+    // ── Conduit descriptor (PimPlugin virtuals, substrate A1) ──────
+    QString conduitId() const override { return pluginId(); }
+    Kalburator::Shape::DomainId domain() const override
+    { return Kalburator::Shape::DomainId{QStringLiteral("contacts")}; }
+    QString conduitDisplayName() const override { return displayName(); }
+    QString conduitIconName() const override
+    { return QStringLiteral("x-office-address-book"); }
 
     // F.3: Category slot snapshot — used by PalmRuntime::finishConnect to
     // write the snapshot into Profile after createPalmBackend populates
     // m_categoryStore from the live AppInfo block. Returns empty list if
     // the store hasn't been populated yet.
-    QString     primaryDbName()       const { return QStringLiteral("AddressDB"); }
-    QStringList categorySlotNames()   const;
+    QString     primaryDbName()       const override { return QStringLiteral("AddressDB"); }
+    QStringList categorySlotNames()   const override;
 
     // Task 3: borrowed accessor for hub<->remote routing translation.
-    WildPalms::PalmCalendar::CategoryMappingStore *categoryStore() const;
+    WildPalms::PalmCalendar::CategoryMappingStore *categoryStore() const override;
 
     // Sub-project D: PimPlugin lifecycle hooks.
     void setHub(Kalburator::Sync::SyncBackendBase *hub) override;
@@ -72,14 +80,14 @@ public:
 
     // Palm backend — called directly by PalmRuntime (Task 6)
     std::unique_ptr<Kalburator::Sync::SyncBackendBase>
-        createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device);
+        createPalmBackend(WildPalms::Runtime::PalmDeviceAccess *device) override;
 
     // Conflict handler
-    Kalburator::Conflict::ConflictHandler *createConflictHandler();
+    Kalburator::Conflict::ConflictHandler *createConflictHandler() override;
 
     // Sub-project D: contacts now has a main view (ContactView reads from hub).
-    bool     hasMainView()   const { return true; }
-    QWidget *createMainView(QWidget *parent) const;
+    bool     hasMainView()   const override { return true; }
+    QWidget *createMainView(QWidget *parent) const override;
     QString  mainViewName()  const { return QStringLiteral("Contacts"); }
     QIcon    mainViewIcon()  const;
 
