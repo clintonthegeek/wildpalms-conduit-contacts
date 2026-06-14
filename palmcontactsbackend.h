@@ -2,6 +2,7 @@
 #define WILDPALMS_CONTACTS_PALMCONTACTSBACKEND_H
 
 #include "syncbackendbase.h"
+#include "palm/sync/palmchangedetection.h"
 
 #include <QObject>
 
@@ -10,7 +11,8 @@ namespace WildPalms::PalmCalendar { class CategoryMappingStore; }
 
 namespace WildPalms::ContactsPlugin {
 
-class PalmContactsBackend final : public Kalburator::Sync::SyncBackendBase
+class PalmContactsBackend final : public Kalburator::Sync::SyncBackendBase,
+                                   public WildPalms::PalmSync::PalmChangeDetection
 {
     Q_OBJECT
 public:
@@ -71,6 +73,9 @@ Q_SIGNALS:
     void recordDeleted(const QString &recordId);
     void errorOccurred(const QString &error);
     void progressUpdated(int current, int total, const QString &message);
+
+protected:
+    QString currentDbRevision() const override;
 
 private:
     WildPalms::PalmSync::PalmBackend                    *m_palmBackend   = nullptr;

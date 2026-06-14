@@ -42,6 +42,12 @@ PalmContactsBackend::PalmContactsBackend(
 
 PalmContactsBackend::~PalmContactsBackend() = default;
 
+QString PalmContactsBackend::currentDbRevision() const
+{
+    return m_palmBackend ? m_palmBackend->databaseRevision(QStringLiteral("AddressDB"))
+                         : QString();
+}
+
 QList<Kalburator::Shape::Shape> PalmContactsBackend::nativeShapes() const
 {
     return { { Kalburator::Shape::DomainId{QStringLiteral("contacts")},
